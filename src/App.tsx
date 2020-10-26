@@ -1,10 +1,11 @@
 import React from 'react';
 import logo from './logo.svg';
 import './App.css';
-import {fromEvent, merge } from "rxjs";
+import { fromEvent, merge } from "rxjs";
 import {
   distinctUntilChanged,
   map,
+  filter, distinctUntilKeyChanged
 } from "rxjs/operators";
 
 const KEY_DOWN_EVENT = "keydown";
@@ -31,18 +32,24 @@ const keyCodesToResultString = (lettersPressed: (number | string)[]): string =>
   )
     .join(PLUS_SYMBOL);
 
+function inputIsNotNullOrUndefined<T>(input: null | undefined | T): input is T {
+  return input !== null && input !== undefined;
+}
+
 function App() {
   React.useEffect(() => {
     const subscription = merge(
-      fromEvent(window, KEY_DOWN_EVENT),
-      fromEvent(window, KEY_UP_EVENT),
+      fromEvent<KeyboardEvent>(window, KEY_DOWN_EVENT).pipe(
+        distinctUntilKeyChanged<KeyboardEvent>("code")
+      ),
+      fromEvent<KeyboardEvent>(window, KEY_UP_EVENT),
     ).pipe(
       map((() => {
         let lettersPressed: (string | number)[] = [];
         const keysPressed: {[key: string]: boolean} = {};
-        let result = "";
+        let result: (string | number)[] = [];
 
-        return (event: Event): string | undefined => {
+        return (event: Event): (string | number)[] | undefined => {
           const key: string = (event as KeyboardEvent).key;
           const keyCode: number = (event as KeyboardEvent).keyCode || (event as KeyboardEvent).which;
 
@@ -52,11 +59,17 @@ function App() {
             }
 
             if (Object.keys(keysPressed).length === 0) {
-              result = keyCodesToResultString(lettersPressed);
+              result = lettersPressed;
               lettersPressed = [];
             }
           } else if (event.type === KEY_DOWN_EVENT) {
-            if ([ALT_KEY, SHIFT_KEY, CONTROL_KEY, META_KEY].includes(key)) {
+            if (key.match(/^F\d$/)) {
+              lettersPressed.push(key);
+              lettersPressed = [];
+            } else if ([ALT_KEY, SHIFT_KEY, CONTROL_KEY, META_KEY].includes(key)) {
+              if (Object.keys(keysPressed).length === 0) {
+                lettersPressed = [];
+              }
               keysPressed[key] = true;
               lettersPressed.push(key);
             } else {
@@ -67,7 +80,17 @@ function App() {
           return result;
         };
       })()),
-      distinctUntilChanged()
+      distinctUntilChanged(),
+      filter(inputIsNotNullOrUndefined),
+      map((combination: (string | number)[]): string => {
+        // Alt only
+        // Ctrl + Shift
+          // letters start from u
+            // try to map utf
+
+
+        return keyCodesToResultString(combination);
+      })
     )
       .subscribe((shortcut) => {
         console.log(shortcut);
