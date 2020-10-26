@@ -1,81 +1,77 @@
 import React from 'react';
 import logo from './logo.svg';
 import './App.css';
-import {fromEvent, scheduled, merge, Observable, combineLatest} from "rxjs";
+import {fromEvent, merge } from "rxjs";
 import {
   distinctUntilChanged,
   map,
 } from "rxjs/operators";
 
+const KEY_DOWN_EVENT = "keydown";
+const KEY_UP_EVENT = "keyup";
+
+const ALT_KEY = "Alt";
+const SHIFT_KEY = "Shift";
+const CONTROL_KEY = "Control";
+const META_KEY = "Meta";
+
+const NUMBER_TYPE = "number";
+
+const PLUS_SYMBOL = "+";
+
+const keyCodesToResultString = (lettersPressed: (number | string)[]): string =>
+  lettersPressed.map(
+    key => {
+      if (typeof key === NUMBER_TYPE) {
+        return String.fromCharCode(key as number).toLowerCase();
+      }
+
+      return key;
+    }
+  )
+    .join(PLUS_SYMBOL);
+
 function App() {
   React.useEffect(() => {
     const subscription = merge(
-      fromEvent(window, "keydown"),
-      fromEvent(window, "keyup"),
+      fromEvent(window, KEY_DOWN_EVENT),
+      fromEvent(window, KEY_UP_EVENT),
     ).pipe(
       map((() => {
-        let lettersPressed: number[] = [];
+        let lettersPressed: (string | number)[] = [];
         const keysPressed: {[key: string]: boolean} = {};
+        let result = "";
 
-        return (event: Event): string => {
-          // console.log(event);
+        return (event: Event): string | undefined => {
           const key: string = (event as KeyboardEvent).key;
           const keyCode: number = (event as KeyboardEvent).keyCode || (event as KeyboardEvent).which;
-          // const { altKey, shiftKey, ctrlKey } = (event as KeyboardEvent);
 
-          if (event.type === "keyup") {
-            if (["Alt", "Shift", "Control", "Meta"].includes(key)) {
-              lettersPressed = [];
+          if (event.type === KEY_UP_EVENT) {
+            if ([ALT_KEY, SHIFT_KEY, CONTROL_KEY, META_KEY].includes(key) ) {
               delete keysPressed[key];
             }
-          } else if (event.type === "keydown") {
-            if (["Alt", "Shift", "Control", "Meta"].includes(key)) {
-              keysPressed[key] = true;
+
+            if (Object.keys(keysPressed).length === 0) {
+              result = keyCodesToResultString(lettersPressed);
               lettersPressed = [];
+            }
+          } else if (event.type === KEY_DOWN_EVENT) {
+            if ([ALT_KEY, SHIFT_KEY, CONTROL_KEY, META_KEY].includes(key)) {
+              keysPressed[key] = true;
+              lettersPressed.push(key);
             } else {
               lettersPressed.push(keyCode);
             }
           }
 
-          return Object.keys(keysPressed).concat(lettersPressed.map(keyCode => String.fromCharCode(keyCode).toLowerCase())).join("+");
+          return result;
         };
       })()),
       distinctUntilChanged()
     )
-      .subscribe((event) => {
-        console.log(event);
-        // console.log(event.type, (event as KeyboardEvent).key);
+      .subscribe((shortcut) => {
+        console.log(shortcut);
     });
-
-    // const subscription = fromEvent(document, 'keydown')
-    //   .subscribe((event) => {
-    //   console.log(event);
-    // });
-
-    // const subscription = merge(
-    //   fromEvent(document, 'keydown'),
-    //   fromEvent(document, 'keyup')
-    // ).pipe(
-    //   distinctUntilChanged((a, b) => {
-    //     return (a as KeyboardEvent).key === (b as KeyboardEvent).key && a.type === b.type;
-    //   }),
-    //   share()
-    // )
-    //   .subscribe((event) => {
-    //   console.log(event);
-    // });
-
-    // keyPresses.subscribe((ctrlpress) => {
-    //   this.holdingCtrl = ctrlpress.type === 'keydown';
-    // });
-
-    // const subscription = fromEvent(window, "keyup").pipe(
-    //   bufferTime(700)
-    // ).subscribe(event => {
-    //   console.log(event);
-    // });
-
-    // return unsubscribe method to execute when component unmounts
     return subscription.unsubscribe;
   }, []);
 
