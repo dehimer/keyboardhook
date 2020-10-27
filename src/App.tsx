@@ -1,35 +1,16 @@
 import React from 'react';
 import './App.css';
-import {fromEvent, merge} from "rxjs";
-import {distinctUntilChanged, distinctUntilKeyChanged, filter, map} from "rxjs/operators";
-import {detectOSName, OS_NAMES} from "./utils";
-
-const KEY_DOWN_EVENT = "keydown";
-const KEY_UP_EVENT = "keyup";
-
-const ALT_KEY = "Alt";
-const SHIFT_KEY = "Shift";
-const CONTROL_KEY = "Control";
-const META_KEY = "Meta";
-
-const NUMBER_TYPE = "number";
-
-const PLUS_SYMBOL = "+";
-
-function inputIsNotNullOrUndefined<T>(input: null | undefined | T): input is T {
-  return input !== null && input !== undefined;
-}
-
-const keyCodesToResultString = (lettersPressed: (number | string)[]): string[] =>
-  lettersPressed.map(
-    key => {
-      if (typeof key === NUMBER_TYPE) {
-        return String.fromCharCode(key as number).toLowerCase();
-      }
-
-      return key as string;
-    }
-  );
+import { fromEvent, merge } from "rxjs";
+import { distinctUntilChanged, distinctUntilKeyChanged, filter, map } from "rxjs/operators";
+import {
+  detectOSName,
+  inputIsNotNullOrUndefined,
+  keyCodesToResultString,
+  OS_NAMES
+} from "../components/utils";
+import { PLUS_SYMBOL } from "../components/constants/common";
+import { KEY_DOWN_EVENT, KEY_UP_EVENT } from "../components/constants/events";
+import { ALT_KEY, CONTROL_KEY, META_KEY, SHIFT_KEY } from "../components/constants/keys";
 
 function App() {
   const OS: OS_NAMES | undefined = detectOSName();
@@ -37,6 +18,7 @@ function App() {
   const [text, setText] = React.useState<string[]>([]);
 
   React.useEffect(() => {
+    // @ts-ignore
     const subscription = merge(
       fromEvent<KeyboardEvent>(window, KEY_DOWN_EVENT).pipe(
         distinctUntilKeyChanged<KeyboardEvent>("code")
@@ -88,7 +70,6 @@ function App() {
         const hasControlKey = combination.includes(CONTROL_KEY);
         const hasShiftKey = combination.includes(SHIFT_KEY);
         const hasAltKey = combination.includes(ALT_KEY);
-        const hasMetaKey = combination.includes(META_KEY);
 
         if (hasControlKey && hasShiftKey && OS && [OS_NAMES.LINUX, OS_NAMES.MAC].includes(OS)) {
           const letters = combination.filter(key => ![CONTROL_KEY, SHIFT_KEY].includes(key));
