@@ -1,28 +1,33 @@
 import * as React from "react";
 import useKeyboardShortcut from "../hooks/useKeyboardShortcut";
+import styled from "styled-components";
 
 const SvgArea: React.FC = (): JSX.Element => {
-  const [texts, setTexts] = React.useState<string[]>([]);
-
   const keyboardShortcut = useKeyboardShortcut();
 
-  React.useEffect(() => {
-    setTexts((prevTexts) => {
-      return prevTexts.concat(keyboardShortcut)
-    });
-  }, [keyboardShortcut])
-
   return (
-    <>
-      {
-        texts.map((text, index) => (
-          <div key={index} style={{ padding: "5px" }}>
-            {text}
-          </div>
-        ))
-      }
-    </>
-  );
+    <Svg>
+      <SvgText x={30} y={60}>
+        {keyboardShortcut}
+      </SvgText>
+    </Svg>
+  )
 };
 
 export default SvgArea;
+
+const Svg = styled.svg.attrs({
+  version: "1.1",
+  xmlns: "http://www.w3.org/2000/svg",
+  xmlnsXlink:" 'http://www.w3.org/1999/xlink'"
+})`
+  background-color: crimson;
+  font-size: 30px;
+  height: 100px;
+  width: 300px;
+`;
+
+const SvgText = styled.text`
+  fill: aliceblue;
+  padding: 5px;
+`;

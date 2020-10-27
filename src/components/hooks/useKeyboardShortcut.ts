@@ -75,6 +75,7 @@ const useKeyboardShortcut = () => {
       })()),
       distinctUntilChanged(),
       filter(inputIsNotNullOrUndefined),
+      filter(rawCombination => rawCombination.length !== 0),
       map((
         rawCombination: (string | number)[]): string[] => keyCodesToResultString(rawCombination)
       ),
@@ -82,6 +83,7 @@ const useKeyboardShortcut = () => {
         const hasControlKey = combination.includes(CONTROL_KEY);
         const hasShiftKey = combination.includes(SHIFT_KEY);
         const hasAltKey = combination.includes(ALT_KEY);
+        const hasMetaKey = combination.includes(META_KEY);
 
         if (hasControlKey && hasShiftKey && OS && [OS_NAMES.LINUX, OS_NAMES.MAC].includes(OS)) {
           const letters = combination.filter(key => ![CONTROL_KEY, SHIFT_KEY].includes(key));
@@ -96,7 +98,7 @@ const useKeyboardShortcut = () => {
           }
         } else if (hasAltKey && OS === OS_NAMES.WINDOWS) {
           // can't check it (use macos), so left it empty
-        } else if (hasShiftKey && combination.length === 2) {
+        } else if (hasShiftKey && combination.length === 2 && !hasAltKey && !hasMetaKey) {
           const letters = combination.filter(key => ![SHIFT_KEY].includes(key));
 
           return letters.join("").toUpperCase();

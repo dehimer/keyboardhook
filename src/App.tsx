@@ -1,14 +1,25 @@
 import React from 'react';
-import './App.css';
 import SvgArea from "./components/SvgArea";
+import styled from "styled-components";
 
 function App() {
 
   return (
-    <div className="App">
+    <Wrapper>
       <SvgArea />
-    </div>
+    </Wrapper>
   );
 }
 
 export default App;
+
+const Wrapper = styled.div`
+  border: 1px solid greenyellow;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  color: red;
+`;
