@@ -7,7 +7,6 @@ export enum OS_NAMES {
   LINUX = "Linux"
 }
 
-
 export function detectOSName(): OS_NAMES | undefined {
   const { appVersion } = navigator;
 
