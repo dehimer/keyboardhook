@@ -1,5 +1,5 @@
 import * as React from "react";
-import useKeyboardShortcut from "../hooks/useKeyboardShortcut";
+import useKeyboardShortcut from "../hooks/useKeyboardShortcut/useKeyboardShortcut";
 import styled from "styled-components";
 
 const SvgArea: React.FC = (): JSX.Element => {
