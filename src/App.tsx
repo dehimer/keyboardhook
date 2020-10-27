@@ -1,12 +1,8 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
-import { fromEvent, merge } from "rxjs";
-import {
-  distinctUntilChanged,
-  map,
-  filter, distinctUntilKeyChanged
-} from "rxjs/operators";
+import {fromEvent, merge} from "rxjs";
+import {distinctUntilChanged, distinctUntilKeyChanged, filter, map} from "rxjs/operators";
+import {detectOSName, OS_NAMES} from "./utils";
 
 const KEY_DOWN_EVENT = "keydown";
 const KEY_UP_EVENT = "keyup";
@@ -20,23 +16,26 @@ const NUMBER_TYPE = "number";
 
 const PLUS_SYMBOL = "+";
 
-const keyCodesToResultString = (lettersPressed: (number | string)[]): string =>
+function inputIsNotNullOrUndefined<T>(input: null | undefined | T): input is T {
+  return input !== null && input !== undefined;
+}
+
+const keyCodesToResultString = (lettersPressed: (number | string)[]): string[] =>
   lettersPressed.map(
     key => {
       if (typeof key === NUMBER_TYPE) {
         return String.fromCharCode(key as number).toLowerCase();
       }
 
-      return key;
+      return key as string;
     }
-  )
-    .join(PLUS_SYMBOL);
-
-function inputIsNotNullOrUndefined<T>(input: null | undefined | T): input is T {
-  return input !== null && input !== undefined;
-}
+  );
 
 function App() {
+  const OS: OS_NAMES | undefined = detectOSName();
+
+  const [text, setText] = React.useState<string[]>([]);
+
   React.useEffect(() => {
     const subscription = merge(
       fromEvent<KeyboardEvent>(window, KEY_DOWN_EVENT).pipe(
@@ -82,27 +81,48 @@ function App() {
       })()),
       distinctUntilChanged(),
       filter(inputIsNotNullOrUndefined),
-      map((combination: (string | number)[]): string => {
-        // Alt only
-        // Ctrl + Shift
-          // letters start from u
-            // try to map utf
+      map((
+        rawCombination: (string | number)[]): string[] => keyCodesToResultString(rawCombination)
+      ),
+      map((combination: string[]): string => {
+        const hasControlKey = combination.includes(CONTROL_KEY);
+        const hasShiftKey = combination.includes(SHIFT_KEY);
+        const hasAltKey = combination.includes(ALT_KEY);
+        const hasMetaKey = combination.includes(META_KEY);
 
+        if (hasControlKey && hasShiftKey && OS && [OS_NAMES.LINUX, OS_NAMES.MAC].includes(OS)) {
+          const letters = combination.filter(key => ![CONTROL_KEY, SHIFT_KEY].includes(key));
 
-        return keyCodesToResultString(combination);
+          // is it emoji or just hotkey
+          if (letters.join("").match(/^u[\dA-F]{4}$/gi)) {
+            try {
+              return String.fromCodePoint(parseInt(letters.slice(1).join(""), 16))
+            } catch {
+              return letters.join(PLUS_SYMBOL);
+            }
+          }
+        } else if (hasAltKey && OS === OS_NAMES.WINDOWS) {
+          // can't check it (use macos), so left it empty
+        } else if (hasShiftKey && combination.length === 2) {
+          const letters = combination.filter(key => ![SHIFT_KEY].includes(key));
+
+          return letters.join("").toUpperCase();
+        }
+
+        return combination.join(PLUS_SYMBOL);
       })
     )
       .subscribe((shortcut) => {
-        console.log(shortcut);
+        setText((prevText) => {
+          return prevText.concat(shortcut)
+        });
     });
     return subscription.unsubscribe;
-  }, []);
+  }, [OS]);
 
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-      </header>
+      {text.map((t, index) => (<div key={index} style={{ padding: "5px" }}>{t}</div>))}
     </div>
   );
 }
